@@ -120,6 +120,11 @@ ggplot(boot_shell) +
 # confidence interval
 confint(boot_shell, level = 0.95)
 
+
+
+
+
+
 # Problem 2 Mercedes S Class Cars
 #Part A
 # filter only year 2011 and trim 63 AMG rows
@@ -144,6 +149,10 @@ ggplot(boot_black) +
   geom_histogram(aes(x = prop_TRUE), binwidth = 0.01)
 # confidence interval
 confint(boot_black, level = 0.95)
+
+
+
+
 
 # Problem 3 
 # PART A
