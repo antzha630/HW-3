@@ -1,0 +1,383 @@
+---
+title: "Homework 3"
+author: "Anthony Zhang - SDS 315 UT Austin, az22589, https://github.com/antzha630/HW-3"
+
+output:
+  pdf_document:
+    toc: true
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+---
+
+```{r global_options, include = FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,          
+  warning = FALSE,       
+  message = FALSE        
+)
+#needed packages:
+library(ggplot2)
+library(kableExtra)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+library(mosaic)
+```
+
+
+[Github Link for R Script](https://github.com/antzha630/HW-3)
+
+------------------------------------------------------------------------
+
+# **1. Gas Prices Analysis**
+
+### **Theory A: Gas stations charge more if they lack direct competition in sight.**
+
+Claim: 
+
+Gas stations with no direct competition charge higher prices compared to gas stations with direct competition nearby. 
+
+Evidence:
+
+```{r fig.height=5, fig.width=7}
+  gas <- read.csv('gasprices.csv')
+  ggplot(gas, aes(x = Competitors, y = Price)) +
+  geom_boxplot() + 
+  labs(title = "Gas Prices by Competitor Availability",
+       x = "Competitors in Sight",
+       y = "Price of Gas") +
+  theme_minimal()
+  boot_comp <- do(1000) * (diff(mean(Price ~ Competitors, data = resample(gas))))
+  ggplot(boot_comp, aes(x = Y)) + 
+  geom_histogram(fill = "blue", color = "black") +
+  labs(
+    title = "Bootstrap Histogram of Price Difference by Competitor Availability",
+    x = "Bootstrapped Mean Difference in Price",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+  confint(boot_comp, level = 0.95)
+```
+
+This boxplot shows the price of gas by whether there are competitors nearby. Gas stations with no competitors nearby have a higher median gas price compared to gas stations with competitors nearby by about 0.05 dollars. However, gas stations with no competitors nearby have a higher IQR than gas stations with competitors nearby by about 0.06. As a result, there is more variability in their gas prices. 
+
+My histogram of bootstrapped mean price differences by competitor availability is shown above. More of the bootstrapped mean differences in price seem to be grouping around -0.025 while there are less bootstrapped mean differences in price around the sides. 
+
+I used bootstrapping to estimate the difference in means for gas prices between gas stations with or without direct competitors nearby. I resampled the dataset 1000 times and calculated the difference in means for each resample with replacement. Then, I constructed a 95% confidence interval based on the bootstrap histogram distribution. The difference in mean gas price between gas stations with competitors nearby and no competitors nearby is between -0.056 and 0.008, with 95% confidence. Since the 95% confidence interval contains 0, we cannot confidently claim there is a difference in gas prices between whether there is competitors nearby. 
+
+Conclusion:
+
+Because the confidence interval contains zero, evidence doesn't strongly support the theory that gas stations charge more if they lack direct competition in sight. 
+
+### **Theory B: The richer the area, the higher the gas prices.**
+
+Claim:
+
+Gas stations that are in richer areas charge higher gas prices. 
+
+Evidence:
+
+```{r fig.height=5, fig.width=7}
+plot(gas$Income, gas$Price, 
+     xlab = "Median Household Income", 
+     ylab = "Price of Gas", 
+     main = "Scatterplot Between Median Household Income and Price of Gas",
+     col = "blue", pch = 20)  
+abline(lm(Price ~ Income, data = gas), col = "red", lwd = 2)
+round(cor(gas$Income, gas$Price),digits = 2)
+boot_income <- do(1000) * cor(Price ~ Income, data = resample(gas))
+ggplot(boot_income) + 
+  geom_histogram(aes(x = cor), binwidth = 0.01) +
+  labs(
+    title = "Bootstrap Histogram of Correlation Between Income and Gas Prices",
+    x = "Bootstrapped Correlation Coefficient",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+confint(boot_income, level = 0.95)
+```
+
+This is a scatterplot between median household income of the ZIP code and the price of gas. There is a correlation coefficient of `r round(cor(gas$Income, gas$Price),digits = 2)` between the two variables. Because the points seem decently scattered and the correlation coefficient is pretty close to 0.5, we are say there is a moderate positive correlation between these two factors. A positive correlation indicates that a higher median household income leads to a higher price of gas. 
+
+My histogram of bootstrapped correlation coefficient between income and price of gas is shown above. More of the bootstrapped correlation coefficients seem to be grouping around 0.45 while there are less bootstrapped mean differences in price around the sides. 
+
+I used bootstrapping to estimate the correlation between income and gas price. With 95% confidence, the true correlation between median household income and price of gas is between 0.209 and 0.579. Since this confidence interval doesn't contain 0, we can say there is a significant positive relationship between income and gas price. There is a small to moderate effect size because of the correlation coefficient in the range of 0 to 0.5 which means that income does have an effect on price of gas but it isn't a big one. 
+
+
+Conclusion:
+
+Since the confidence interval is entirely positive, evidence supports the theory that a higher median household income leads to a higher price of gas. This relationship is at a small to moderate effect size and there is a statistically significant relationship. 
+
+### **Theory C: Gas stations at stoplights charge more.**
+
+Claim:
+
+Gas stations at stoplights charge more than gas stations that aren't at stoplights.
+
+Evidence:
+
+```{r fig.height=5, fig.width=7}
+ggplot(gas, aes(x = Stoplight, y = Price)) +
+  geom_boxplot() + 
+  labs(title = "Gas Prices by Stoplight Availability",
+       x = "Stoplight in Sight",
+       y = "Price of Gas") +
+  theme_minimal()
+boot_stoplight <- do(1000) * (diff(mean(Price ~ Stoplight, data = resample(gas))))
+ggplot(boot_stoplight) + 
+  geom_histogram(aes(x = Y)) +
+  labs(
+    title = "Bootstrap Histogram of Price Difference by Stoplight Availability",
+    x = "Bootstrapped Mean Difference in Price",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+confint(boot_stoplight, level = 0.95)
+```
+
+This boxplot shows the price of gas by whether there are stoplights nearby. Gas stations with stoplights nearby have a higher median gas price compared to gas stations with no stoplights nearby by about 0.04 dollars. However, gas stations with no stoplights nearby have a higher IQR than gas stations with stoplights nearby by about 0.05 dollars. As a result, there is more variability in their gas prices. 
+
+My histogram of bootstrapped mean price differences by stoplight availability is shown above. More of the bootstrapped mean differences in price seem to be grouping around -0.01 while there are less bootstrapped mean differences in price around the sides. 
+
+I used bootstrapping to estimate the difference in means for gas prices between gas stations with or without direct stoplights nearby. The difference in mean gas price between gas stations with stoplights nearby and no stoplights nearby is between -0.038 and 0.028, with 95% confidence. Since the 95% confidence interval contains 0, we cannot confidently claim there is a difference in gas prices depending on whether there is stoplights nearby. 
+
+Conclusion: 
+
+Because the confidence interval contains zero, evidence doesn't strongly support the theory that gas stations charge more at gas stations with stoplights compared to gas stations without stoplights. 
+
+### **Theory D: Gas stations with direct highway access charge more**
+
+Claim:
+
+Gas stations with direct highway access charge more for gas compared to gas stations without direct highway access. 
+
+Evidence:
+
+```{r fig.height=5, fig.width=7}
+ggplot(gas, aes(x = Highway, y = Price)) +
+  geom_boxplot() + 
+  labs(title = "Gas Prices by Highway Availability",
+       x = "Highways in Sight",
+       y = "Price of Gas") +
+  theme_minimal()
+boot_highway <- do(1000) * (diff(mean(Price ~ Highway, data = resample(gas))))
+ggplot(boot_highway) + 
+  geom_histogram(aes(x = Y)) + 
+  labs(
+    title = "Bootstrap Histogram of Price Difference by Highway Availability",
+    x = "Bootstrapped Mean Difference in Price",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+confint(boot_highway, level = 0.95)
+```
+
+This boxplot shows the price of gas by whether the gas station has direct access to highways or not. Gas stations with direct access to highways have a higher median gas price compared to gas stations with no direct access to highways by about 0.05 dollars. Gas stations with direct access to highways have a higher IQR than gas stations with no direct access to highways by about 0.04 dollars. As a result, there is more variability in their gas prices. 
+
+My histogram of bootstrapped mean price differences by direct highway access availability is shown above. More of the bootstrapped mean differences in price seem to be grouping around 0.05 while there are less bootstrapped mean differences in price around the sides. 
+
+I used bootstrapping to estimate the difference in means for gas prices between gas stations with or without direct access to highways. The difference in mean gas price between gas stations with direct access to highways or no direct access to highways nearby is between 0.009 and 0.084, with 95% confidence. Since the 95% confidence interval doesn't contain 0, we can confidently claim there is a difference in gas prices depending on whether it has direct access to highways or not. There is a small to moderate effect size because of the size of the confidental interval.
+
+Conclusion:
+
+Since the confidence interval is entirely positive, evidence supports the theory that gas stations with direct highway access charge more. This relationship is a small to moderate effect size and there is a statistically significant relationship. 
+
+### **Theory E: Shell charges more than all other non-Shell brands.**
+
+Claim:
+
+Shell has higher gas prices compared to all the other non-Shell brands.
+
+Evidence:
+
+```{r fig.height=5, fig.width=7}
+ggplot(gas, aes(x = Name == "Shell", y = Price, fill = Name == "Shell")) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c("Non-Shell", "Shell")) +
+  labs(
+    title = "Gas Prices by Shell and Non-Shell",
+    x = "Gas Station Type",
+    y = "Price of Gas",
+    fill = "Gas Station"
+  ) +
+  theme_minimal()
+boot_shell <- do(1000) * {
+  data <- resample(gas)
+  mean_shell <- mean(data$Price[data$Name == "Shell"])
+  mean_other <- mean(data$Price[data$Name != "Shell"])
+  mean_shell - mean_other
+}
+ggplot(boot_shell) + 
+  geom_histogram(aes(x = result), binwidth = 0.01) +
+  labs(
+    title = "Bootstrap Histogram of Price Difference by Shell Company or Not",
+    x = "Bootstrapped Mean Difference in Price",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+confint(boot_shell, level = 0.95)
+```
+
+This boxplot shows the price of gas by whether the gas station company is Shell or not Shell. Gas stations that are Shell have a higher median gas price compared to gas stations that are not Shell by about 0.05 dollars. Also, gas stations that are Shell have a higher IQR than gas stations that are not Shell by about 0.05 dollars. As a result, there is more variability in their gas prices. 
+
+My histogram of bootstrapped mean price differences by whether it is Shell or not is shown above. More of the bootstrapped mean differences in price seem to be grouping around 0.003 while there are less bootstrapped mean differences in price around the sides. 
+
+I used bootstrapping to estimate the difference in means for gas prices between gas stations that are Shell and gas stations that aren't Shell. The difference in mean gas price between these two is between -0.009 and 0.068, with 95% confidence. Since the 95% confidence interval contains 0, we cannot confidently claim there is a difference in gas prices depending on whether it is Shell or not.
+
+Conclusion:
+
+Because the confidence interval contains zero, evidence doesn't strongly support the theory that Shell gas stations charge more than non Shell gas stations.
+
+# **2. Mercedes S Class Cars**
+
+### **PART A**
+
+```{r fig.height=5, fig.width=7}
+sclass <- read.csv('sclass.csv')
+filtered_one <- subset(sclass, year == 2011 & trim == "63 AMG")
+boot_mileage <- do(1000) * mean(~mileage, data = resample(filtered_one))
+ggplot(boot_mileage) + 
+  geom_histogram(aes(x = mean)) + 
+  labs(
+    title = "Bootstrap Histogram of Mean Mileage AMG Vehicles",
+    x = "Bootstrapped Mean Mileage",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+confint(boot_mileage, level = 0.95)
+```
+
+With 95% confidence, we estimate that the true average mileage of 2011 S-Class 63 AMG vehicles hitting the used-car market falls between 26367 miles and 31754 miles. If a group of people or an individual person is looking to buy this type of car at the used car market, they can expect it to be between this rank. It is important to know that it won't 100% be in this range and we expect it to be wrong 5% of the time. 
+
+### **PART B**
+
+```{r fig.height=5, fig.width=7}
+filtered_two <- subset(sclass, year == 2014 & trim == "550")
+filtered_two$isBlack <- ifelse(filtered_two$color == "Black", TRUE, FALSE)
+boot_black <- do(1000) * prop(~isBlack, data = resample(filtered_two))
+ggplot(boot_black) + 
+  geom_histogram(aes(x = prop_TRUE), binwidth = 0.01) +
+  labs(
+    title = "Bootstrap Histogram of Proportion 550 Black Vehicles",
+    x = "Bootstrapped Proportion",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+confint(boot_black, level = 0.95)
+```
+
+With 95% confidence, we estimate that the true proportion of 2014 S-Class 550 vehicles that were painted black falls between 0.42 and 0.45. This shows that a big amount of luxury cars on the used market were black. This makes sense because industry trends show this is a common color for expensive cars since it can be used by organizations like the FBI, government, criminals, or people in general. It is a slick and clean color that matches with many different enviornments and places. 
+
+
+# **3. TV Network**
+
+### **PART A**
+
+Question: 
+
+Does "Living with Ed" or "My Name is Earl" result in higher happiness ratings among viewers?
+
+Approach:
+
+First, I filtered the dataset to only have responses from the two shows that are listed above. I used bootstrapping to construct a 95% confidence interval for the difference in mean Q1_Happy ratings between the two shows.
+
+```{r fig.height=5, fig.width=7}
+nbc_data <- read.csv("nbc_pilotsurvey.csv")
+filtered_three <- subset(nbc_data, Show == "Living with Ed" | Show == "My Name is Earl")
+boot_happy <- do(1000) * {
+  diff_mean <- diff(mean(Q1_Happy ~ Show, data = resample(filtered_three)))
+  data.frame(diff_means = diff_mean)
+}
+confint(boot_happy, level = 0.95)
+```
+
+Results:
+The 95% confidence interval for the difference in mean happiness ratings (Living with Ed - My Name is Earl) is (-0.41, 0.07). Since the interval contains 0, this doesn't show a significant difference in happiness ratings between the two shows.
+
+Conclusion:
+Since the confidence interval contains 0, there is no evidence supporting the idea that one show is consistently more happy than the other. 
+
+### **PART B**
+
+Question:
+Does "The Biggest Loser" or "The Apprentice: Los Angeles" result in higher annoyance ratings among viewers?
+
+Approach:
+
+First, I filtered the dataset to only have responses from the two shows that are listed above. I used bootstrapping to construct a 95% confidence interval for the difference in mean Q1_annoying ratings between the two shows.
+
+```{r fig.height=5, fig.width=7}
+filtered_four <- subset(nbc_data, Show == "The Biggest Loser" | Show == "The Apprentice: Los Angeles")
+boot_annoyed <- do(1000) * {
+  diff_mean <- diff(mean(Q1_Annoyed ~ Show, data = resample(filtered_four)))
+  data.frame(diff_means = diff_mean)
+}
+confint(boot_annoyed, level = 0.95)
+```
+
+Results:
+The 95% confidence interval for the difference in mean annoyance ratings (Biggest Loser - Apprentice: LA) is (-0.52, -0.03). Since the interval doesn't contain 0, this shows a significant difference in annnoyance ratings between the two shows.
+
+Conclusion:
+Since the confidence interval is entirely negative, there is evidence supporting the idea that "The Apprentice: Los Angeles" is consistently more annoying to viewers than "The Biggest Loser". 
+
+### **PART C**
+
+Question:
+What proportion of viewers would rate the show "Dancing with the Stars" as confusing on the Q2_Confusing question?
+
+Approach:
+
+First, I filtered the dataset to only have responses from the show that is listed above. I used bootstrapping to construct a 95% confidence interval for the proportion of respondents who rated Q1_confusing a 4 or more (out of 5).
+
+```{r fig.height=5, fig.width=7}
+filtered_five <- subset(nbc_data, Show == "Dancing with the Stars")
+filtered_five$isConfusing <- ifelse(filtered_five$Q2_Confusing >= 4, TRUE, FALSE)
+boot_confusing <- do(1000) * prop(~isConfusing, data = resample(filtered_five))
+confint(boot_confusing, level = 0.95)
+```
+
+Results:
+The 95% confidence interval for the proportion of respondents who rated 4 or more is (0.04, 0.12). 
+
+Conclusion:
+Because the proportion of viewers who confused the show confusing is on the lower side (less than 0.15), there isn't a big portion of the audience that struggles to understand the show and it isn't that confusing. 
+
+
+
+# **4. Ebay**
+
+Question:
+
+Does the extra traffic brought to Ebay from paid search results—above and beyond what we’d see if we “went organic”— justify the cost of the ads themselves? Is the revenue ratio for the treatment group or the group that has organic search results less than the revenue ratio for the control group or the paid search results? 
+
+Approach: 
+First, I made a new column called revenue ratio which is just the revenue after divided by the revenue before. I did this for each DMA which is the Designated Market Area. Then, I used the bootstrap method with 10000 samples with replacement to find the difference in mean revenue ratios between the treatment group and control group. Both of these are stated in the problem and above. This was used to make a 95% confidence interval for the difference in mean revenue ratios.
+
+```{r fig.height=5, fig.width=7}
+ebay <- read.csv("ebay.csv")
+ebay$rev_ratio <- ebay$rev_after / ebay$rev_before
+boot_diff <- do(10000) * {
+  diff_means <- diff(mean(rev_ratio ~ adwords_pause, data = resample(ebay)))
+  data.frame(diff_means = diff_means)  
+}
+ggplot(boot_diff, aes(x = diff_means)) +
+  geom_histogram(fill = "lightblue", color = "black") +
+  labs(title = "Bootstrap Distribution of Revenue Ratio Difference",
+       x = "Difference in Revenue Ratio",
+       y = "Frequency")
+
+confint(boot_diff, level = 0.95)
+
+```
+
+Results:
+The 95% bootstrap confidence interval for the difference in mean revenue ratios was (-0.09, -0.01). Since this confidence interval doesn't include 0, there is a statistically significant difference in mean revenue ratios.
+
+Conclusion:
+Because the confidence interval only has negative values, there is evidence supporting the fact that Ebay's paid advertising on Google search bars generated aditional revenue. The effect size is pretty small due to how small the interval is so it is up to Ebay to decide whether they want to take the hit and take a look at their options. 
+
+
+------------------------------------------------------------------------
